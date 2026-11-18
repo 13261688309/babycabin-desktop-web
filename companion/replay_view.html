@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>陪护舱 · 离线日志回放</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#18231f;background:#f5f7f6;font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif;letter-spacing:0}header{background:#fff;border-bottom:1px solid #d6dfda;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}h1{font-size:21px;margin:0}h2{font-size:15px;margin:0 0 12px}p{margin:4px 0}.badge{background:#f6e9b8;color:#614d09;padding:5px 10px;border-radius:4px;font-weight:600}main{max-width:1080px;margin:auto;padding:22px 24px}.note,.muted{color:#596b61}.note{border-left:3px solid #c7a333;padding-left:12px;margin-bottom:20px}.toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:16px}label{display:block;margin-bottom:5px;font-weight:600}select,button,input{font:inherit}select{max-width:100%;min-height:38px;background:#fff;border:1px solid #b8c6bf;border-radius:4px;padding:6px 10px;color:inherit}#session{width:100%}.transport{display:flex;gap:7px;align-items:center;flex-wrap:wrap}button{min-height:38px;min-width:40px;border:1px solid #b8c6bf;border-radius:4px;background:#fff;color:#214b3b;padding:6px 11px;cursor:pointer}button:disabled{opacity:.45;cursor:default}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #76a995;outline-offset:2px}.play{background:#176246;color:#fff;border-color:#176246}.position{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-top:18px;font-variant-numeric:tabular-nums}#seek{width:100%;margin:10px 0 18px;accent-color:#176246}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;border-top:1px solid #d6dfda;border-bottom:1px solid #d6dfda;padding:20px 0}.summary p{color:#596b61}.summary strong{display:block;font-size:24px;font-weight:600;overflow-wrap:anywhere}.summary span{display:block;color:#596b61;overflow-wrap:anywhere}.details{display:grid;grid-template-columns:1fr 1.3fr;gap:28px;margin-top:24px;align-items:start}dl{margin:0;display:grid;gap:10px}dl>div{display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px}dt{color:#596b61}dd{margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}pre{margin:0;padding:14px;background:#e9efeb;border-radius:4px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:440px;overflow:auto;font:12px/1.6 Consolas,monospace}footer{border-top:1px solid #d6dfda;margin-top:24px;padding-top:14px;color:#596b61}#recordNumber{white-space:nowrap}#error{color:#a82d21}details{margin-top:18px}summary{cursor:pointer}#sources{font:12px/1.6 Consolas,monospace;overflow-wrap:anywhere;padding-top:8px}noscript{display:block;color:#a82d21;padding:20px}@media(max-width:700px){.toolbar{grid-template-columns:1fr}.details{grid-template-columns:1fr;gap:22px}.summary{grid-template-columns:1fr 1fr}main{padding:18px 16px}header{padding:16px}.summary strong{font-size:21px}}@media(max-width:370px){.summary{grid-template-columns:1fr}.transport{gap:6px}}
+</style>
+</head>
+<body>
+<header><h1>陪护舱 · 日志回放</h1><span class="badge">离线历史数据 · 不连接设备</span></header>
+<main>
+<p class="note">各采集会话独立回放，不推断时间同步。这里只显示已保存的记录，不代表设备当前在线或整机联调通过。</p>
+<div class="toolbar"><div><label for="session">采集会话</label><select id="session"></select></div><div class="transport">
+<button id="previous" type="button" title="上一条记录" aria-label="上一条记录">&#9664;|</button>
+<button id="play" type="button" class="play" aria-label="播放回放" title="播放回放">&#9654;</button>
+<button id="next" type="button" title="下一条记录" aria-label="下一条记录">|&#9654;</button>
+<select id="speed" aria-label="播放速度"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select>
+</div></div>
+<div class="position"><label id="axis" for="seek">会话时间</label><output id="position"></output><span id="recordNumber"></span></div>
+<input id="seek" type="range" min="0" max="1" value="0" step="1" aria-label="回放位置">
+<div class="summary" aria-label="选中历史记录">
+<section><p>历史视觉状态</p><strong id="state">Unknown</strong><span id="reason">无视觉记录</span></section>
+<section><p>历史候选类别</p><strong id="candidate">--</strong><span id="confidence">置信度 --</span></section>
+<section><p>历史温度</p><strong id="temperature">--</strong><span id="sensor">无遥测记录</span></section>
+<section><p>历史湿度</p><strong id="humidity">--</strong><span id="device">非实时设备状态</span></section>
+</div>
+<section class="details"><div><h2>记录信息</h2><dl>
+<div><dt>来源</dt><dd id="source">--</dd></div><div><dt>时间依据</dt><dd id="timebase">--</dd></div>
+<div><dt>记录类型</dt><dd id="kind">--</dd></div><div><dt>间隔</dt><dd id="gap">--</dd></div>
+<div><dt>原始时间</dt><dd id="timestamp">--</dd></div><div><dt>诊断</dt><dd id="diagnostic">--</dd></div>
+</dl><details><summary>输入文件校验值</summary><div id="sources"></div></details></div>
+<div><h2>选中记录</h2><pre id="raw">暂无记录</pre></div></section>
+<p id="error" role="alert"></p>
+<footer>只读回放，无控制接口。无接收时间的记录仅按序号步进；回放不能替代电平、供电、物理停车或执行器验收。</footer>
+</main><noscript>回放需要启用 JavaScript；本页没有联网请求。</noscript>
+<script id="replay-data" type="application/json">__REPLAY_DATA__</script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const data=JSON.parse($('replay-data').textContent);
+const reasons={confirmed:'连续帧确认',confirming:'正在确认',no_detection:'未检测到目标',low_confidence:'置信度不足',ambiguous_class:'类别冲突',multiple_detections:'多个目标',stream_lost:'视频中断',stale:'记录已过期',runtime_error:'运行异常',stopped:'观察结束',interrupted:'观察中断',end_of_stream:'文件结束',no_frame:'等待首帧'};
+const health={ok:'记录为正常',read_failed:'记录为读取失败',stale:'记录为过期',disabled:'记录为未启用'};
+let session,index=-1,position=0,playing=false,previousFrame=null;
+function pause(){playing=false;previousFrame=null;$('play').textContent='\u25b6';$('play').setAttribute('aria-label','播放回放');$('play').title='播放回放'}
+function findEvent(value){let low=0,high=session.events.length;while(low<high){const mid=(low+high)>>1;if(session.events[mid].position<=value)low=mid+1;else high=mid}return low-1}
+function show(value,selectedIndex){
+ position=Math.max(0,Math.min(session.duration,value));$('seek').value=Math.round(position);index=selectedIndex===undefined?findEvent(position):selectedIndex;
+ const event=index<0?null:session.events[index],r=event?.record||{},timed=session.timeAxis!=='ordinal_only';
+ const since=event?Math.max(0,position-event.position):null;
+ const o=r.observation||{},d=r.data||{},sensor=d.sensorHealth||{};
+ const visionExpired=session.kind==='vision'&&since>1500;
+ $('state').textContent=visionExpired?'Unknown':o.state||'Unknown';
+ $('reason').textContent=visionExpired?'游标位于记录断档':reasons[o.reason]||o.reason||'本会话无视觉记录';
+ $('candidate').textContent=visionExpired?'--':o.candidate||'--';
+ $('confidence').textContent=!visionExpired&&o.confidence!=null?`置信度 ${(o.confidence*100).toFixed(1)}%`:'置信度 --';
+ const sensorOk=r.type==='report'&&sensor.dht11==='ok'&&(!timed||since<=6000);
+ $('temperature').textContent=sensorOk&&d.temp!=null?`${d.temp} °C`:'--';
+ $('humidity').textContent=sensorOk&&d.hum!=null?`${d.hum} %RH`:'--';
+ $('sensor').textContent=session.kind==='vision'?'本会话无独立遥测':timed&&since>6000?'距该记录已超过 6 秒':health[sensor.dht11]||'本条无温湿度状态';
+ $('device').textContent=d.status?`历史状态 ${d.status}`:'非实时设备状态';
+ $('position').textContent=timed?`${(position/1000).toFixed(2)} / ${(session.duration/1000).toFixed(2)} s`:`位置 ${Math.floor(position)+1} / ${session.events.length}`;
+ $('recordNumber').textContent=`记录 ${index+1} / ${session.events.length}`;
+ $('previous').disabled=index<=0;$('next').disabled=index>=session.events.length-1;
+ $('gap').textContent=timed&&event?`距选中记录 ${(since/1000).toFixed(2)} s`:'无可用接收时刻';
+ $('timestamp').textContent=r.utc|| (d.ts!=null?`固件 tick ${d.ts} ms`:'--');
+ $('kind').textContent=r.type|| (event?'vision_observation':'尚无记录');
+ $('raw').textContent=event?JSON.stringify(r,null,2):'游标尚未到达第一条记录';
+}
+function choose(){pause();session=data.sessions[Number($('session').value)];$('seek').max=session.duration||1;$('seek').disabled=session.duration===0;$('play').disabled=session.duration===0;
+ $('source').textContent=session.name;$('axis').textContent=session.timeAxis==='ordinal_only'?'记录序号（逐条播放，非原速）':'独立会话时间';
+ $('timebase').textContent={host_monotonic_relative_ms:'保存的主机单调时钟，相对首条记录',saved_receive_offsets_ms:'保存的接收块完成偏移',ordinal_only:'无接收时间，不能判断时延'}[session.timeAxis];
+ $('diagnostic').textContent=session.diagnostic||'历史识别记录，不复算准确率';
+ $('sources').replaceChildren(...Object.entries(session.files).map(([name,f])=>{const p=document.createElement('p');p.textContent=`${name} · ${f.bytes} bytes · SHA256 ${f.sha256}`;return p}));show(0,session.events[0].position===0?0:undefined)}
+for(let i=0;i<data.sessions.length;i++){const s=data.sessions[i],option=document.createElement('option');option.value=i;option.textContent=`${s.kind==='vision'?'识别':'遥测'} · ${s.name}`;$('session').append(option)}
+$('session').addEventListener('change',choose);
+$('seek').addEventListener('input',()=>{pause();show(Number($('seek').value))});
+$('previous').addEventListener('click',()=>{pause();const i=Math.max(0,index-1);show(session.events[i].position,i)});
+$('next').addEventListener('click',()=>{pause();const i=Math.min(session.events.length-1,index+1);show(session.events[i].position,i)});
+$('play').addEventListener('click',()=>{if(playing){pause();return}if(position>=session.duration)show(0);playing=true;previousFrame=null;$('play').textContent='\u275a\u275a';$('play').setAttribute('aria-label','暂停回放');$('play').title='暂停回放'});
+function animate(now){if(playing){if(previousFrame!==null){const advance=(now-previousFrame)*Number($('speed').value)/(session.timeAxis==='ordinal_only'?1000:1);show(position+advance);if(position>=session.duration)pause()}previousFrame=playing?now:null}requestAnimationFrame(animate)}
+try{choose();requestAnimationFrame(animate)}catch(error){pause();$('error').textContent='回放数据无效，无法显示。'}
+</script>
+</body></html>

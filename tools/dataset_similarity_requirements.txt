@@ -1,0 +1,2 @@
+# Add-on for the existing bench Python environment; not a runtime/firmware dependency.
+ImageHash==4.3.2

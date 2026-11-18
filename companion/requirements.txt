@@ -1,0 +1,5 @@
+# Existing host runtime verified with these versions. CUDA builds are host-specific.
+ultralytics==8.4.82
+opencv-python==4.13.0.92
+pyserial==3.5
+python-multipart==0.0.32
